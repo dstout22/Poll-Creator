@@ -8,7 +8,7 @@ import { View, ActivityIndicator } from "react-native";
 export default function Index() {
   const [isReady, setIsReady] = useState(false);
   useEffect(() => {
-    async function seedAdmin() {
+    async function createAdmin() {
       try {
         await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
         console.log("Admin account created successfully.");
@@ -24,7 +24,7 @@ export default function Index() {
       }
     }
 
-    seedAdmin();
+    createAdmin();
   }, []); //An empty dependency array ensures this effect runs only once when the component "mounts"
   //The mount is the first render
 
