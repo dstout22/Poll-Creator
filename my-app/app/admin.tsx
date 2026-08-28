@@ -1,11 +1,16 @@
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
+import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/src/config/firebaseConfig";
+import { adminEmail, adminPassword } from "@/src/util/hidden";
+import { doc, setDoc } from "firebase/firestore";
 
 const maxOptions = 5;
 
 export default function Admin() {
   const [numOptions, setNumOptions] = useState("");
   const [options, setOptions] = useState<string[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const handleNumOptionsChange = (value: string) => {
 
@@ -24,6 +29,21 @@ export default function Admin() {
     newOptions[index] = value;
     setOptions(newOptions);
   };
+
+  const generatePassword = (length = 12) => {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  let password = "";
+
+  for (let i = 0; i < length; i++) {
+    password += characters.charAt(
+      Math.floor(Math.random() * characters.length)
+    );
+  }
+
+  return password;
+};
 
   return (
     <View style={styles.container}>
@@ -65,12 +85,53 @@ export default function Admin() {
         style={styles.input}
         placeholder="Guest email"
         keyboardType="email-address"
+        value={inviteEmail}
+        onChangeText={setInviteEmail}
         autoCapitalize="none"
       />
 
       <View style={styles.buttonRow}>
-        <Button title="Invite Guest" onPress={() => {}} />
-        <Button title="Remove Guest" onPress={() => {}} />
+        <Button title="Invite Guest" onPress={async () => {
+          const invitePassword = generatePassword();
+          try {
+            // Create the new account
+            await createUserWithEmailAndPassword(
+              auth,
+              inviteEmail,
+              invitePassword
+            );
+
+            await signInWithEmailAndPassword(
+              auth,
+              adminEmail,
+              adminPassword
+            );
+            console.log("User created and admin signed back in.");
+ 
+            Alert.alert(
+              "User Created - save these credentials",
+              `Email: ${inviteEmail}\nPassword: ${invitePassword}`,
+              [{ text: "OK" }]
+            );
+
+          } catch (error) {
+            console.log(error);
+          }
+        }} />
+        <Button title="Remove Guest" onPress={async () => {
+          if (!inviteEmail) return;
+
+          try {
+            await setDoc(doc(db, "toRemove", inviteEmail), {
+              email: inviteEmail, 
+            });
+
+            setInviteEmail("");
+            alert(`${inviteEmail} marked for removal\nEnsure that this is the correct email`);
+          } catch (error) {
+            console.error(error);
+          }
+        }} />
       </View>
     </View>
   );

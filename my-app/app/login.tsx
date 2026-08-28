@@ -1,8 +1,10 @@
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { deleteUser, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { adminEmail } from "../src/util/hidden.js";
 import { router } from "expo-router";
+import { deleteDoc, doc, getDoc } from "firebase/firestore";
+import { db } from "@/src/config/firebaseConfig.js";
 
 const auth = getAuth();
 
@@ -15,10 +17,21 @@ export default function Login() {
   setError("");
 
   signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    .then(async (userCredential) => {
       const user = userCredential.user;
 
       if (user.email !== adminEmail) {
+        const removeRef = doc(db, "toRemove", email.toLowerCase());
+        const removeSnap = await getDoc(removeRef);
+
+        if (removeSnap.exists()) {
+          await deleteUser(user);
+          await deleteDoc(removeRef);
+
+          setError("This account has been removed.");
+          return;
+        }
+
         router.replace("/poll");
         return;
       }
@@ -56,10 +69,6 @@ export default function Login() {
     </View>
   );
 }
-
-const [error, setError] = useState("");
-
-
 
 const styles = StyleSheet.create({
   container: {
