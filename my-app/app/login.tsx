@@ -4,7 +4,7 @@ import { useState } from "react";
 import { adminEmail } from "../src/util/hidden.js";
 import { router } from "expo-router";
 import { deleteDoc, doc, getDoc } from "firebase/firestore";
-import { db } from "@/src/config/firebaseConfig.js";
+import { db } from "../src/config/firebaseConfig.js";
 
 const auth = getAuth();
 
@@ -21,7 +21,7 @@ export default function Login() {
       const user = userCredential.user;
 
       if (user.email !== adminEmail) {
-        const removeRef = doc(db, "toRemove", email.toLowerCase());
+        const removeRef = doc(db, "toRemove", email);
         const removeSnap = await getDoc(removeRef);
 
         if (removeSnap.exists()) {
@@ -51,7 +51,7 @@ export default function Login() {
 
       <TextInput 
         style={styles.input} 
-        placeholder="Username" 
+        placeholder="Email" 
         value={email}
         onChangeText={setEmail}
       />

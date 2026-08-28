@@ -1,9 +1,9 @@
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword, updatePassword } from "firebase/auth";
 import { auth, db } from "@/src/config/firebaseConfig";
 import { adminEmail, adminPassword } from "@/src/util/hidden";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const maxOptions = 5;
 
@@ -92,14 +92,36 @@ export default function Admin() {
 
       <View style={styles.buttonRow}>
         <Button title="Invite Guest" onPress={async () => {
+          const userRef = doc(db, "userPasswords", inviteEmail);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+
+            const oldPassword = userSnap.data().password;
+
+            Alert.alert(
+              "User Already Created - save these credentials",
+              `Email: ${inviteEmail}\nPassword: ${oldPassword}`,
+              [{ text: "OK" }]
+            );
+
+            return;
+          }
+
           const invitePassword = generatePassword();
+
           try {
-            // Create the new account
+
             await createUserWithEmailAndPassword(
               auth,
               inviteEmail,
               invitePassword
             );
+
+            await setDoc(doc(db, "userPasswords", inviteEmail), {
+              email: inviteEmail,
+              password: invitePassword,
+            });
 
             await signInWithEmailAndPassword(
               auth,
