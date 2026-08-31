@@ -1,5 +1,5 @@
 import { Redirect } from "expo-router";
-import { auth, db } from "../src/config/firebaseConfig.js";
+import { auth } from "../src/config/firebaseConfig.js";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { adminEmail, adminPassword } from "../src/util/hidden.js";
 import { useEffect, useState } from "react";

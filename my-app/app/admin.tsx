@@ -1,6 +1,6 @@
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, deleteUser, signInWithEmailAndPassword, updatePassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
 import { auth, db } from "@/src/config/firebaseConfig";
 import { adminEmail, adminPassword } from "@/src/util/hidden";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -11,6 +11,7 @@ export default function Admin() {
   const [numOptions, setNumOptions] = useState("");
   const [options, setOptions] = useState<string[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [question, setQuestion] = useState("");
 
   const handleNumOptionsChange = (value: string) => {
 
@@ -31,19 +32,44 @@ export default function Admin() {
   };
 
   const generatePassword = (length = 12) => {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  let password = "";
+    let password = "";
 
-  for (let i = 0; i < length; i++) {
-    password += characters.charAt(
-      Math.floor(Math.random() * characters.length)
-    );
+    for (let i = 0; i < length; i++) {
+      password += characters.charAt(
+       Math.floor(Math.random() * characters.length)
+      );
+    }
+
+    return password;
+  };
+
+  const setPollContent = async () => {
+    if (!question || options.length === 0) {
+      Alert.alert("Error", "Please enter a question and at least one option.");
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, "polls", "currentPoll"), {
+        question: question,
+        options: options,
+      });
+
+      Alert.alert("Success", "Poll saved!");
+      Alert.alert("Warning", "This will overwrite any previous polls submitted.");
+
+      setOptions([]);
+      setNumOptions("");
+      setQuestion("");
+
+    }   catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Could not save poll.");
+    }
   }
-
-  return password;
-};
 
   return (
     <View style={styles.container}>
@@ -54,6 +80,8 @@ export default function Admin() {
       <TextInput
         style={styles.input}
         placeholder="Question"
+        value={question}
+        onChangeText={setQuestion}
       />
 
       <TextInput
@@ -76,7 +104,7 @@ export default function Admin() {
 
       <Button
         title="Set Poll Content"
-        onPress={() => {}}
+        onPress={setPollContent}
       />
 
       <Text style={styles.sectionTitle}>Guest Management</Text>
@@ -140,6 +168,7 @@ export default function Admin() {
             console.log(error);
           }
         }} />
+
         <Button title="Remove Guest" onPress={async () => {
           if (!inviteEmail) return;
 
