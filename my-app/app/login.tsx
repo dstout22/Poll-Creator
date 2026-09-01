@@ -27,6 +27,7 @@ export default function Login() {
         if (removeSnap.exists()) {
           await deleteUser(user);
           await deleteDoc(removeRef);
+          await deleteDoc(doc(db, "userPasswords", email));
 
           setError("This account has been removed.");
           return;
