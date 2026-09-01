@@ -3,7 +3,8 @@ import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
 import { auth, db } from "@/src/config/firebaseConfig";
 import { adminEmail, adminPassword } from "@/src/util/hidden";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { router } from "expo-router";
 
 const maxOptions = 5;
 
@@ -50,13 +51,23 @@ export default function Admin() {
     if (!question || options.length === 0) {
       Alert.alert("Error", "Please enter a question and at least one option.");
       return;
-    }
+    } 
 
     try {
-      await setDoc(doc(db, "polls", "currentPoll"), {
-        question: question,
-        options: options,
-      });
+      // Delete all previous results
+      const resultsSnap = await getDocs(collection(db, "Results"));
+
+      await Promise.all(
+       resultsSnap.docs.map((resultDoc) =>
+         deleteDoc(resultDoc.ref)
+       )
+     );
+
+     // Save the new poll
+     await setDoc(doc(db, "polls", "currentPoll"), {
+       question: question,
+       options: options,
+     });
 
       Alert.alert("Success", "Poll saved!");
       Alert.alert("Warning", "This will overwrite any previous polls submitted.");
@@ -65,12 +76,12 @@ export default function Admin() {
       setNumOptions("");
       setQuestion("");
 
-    }   catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Could not save poll.");
+    } catch (error) {
+     console.error(error);
+     Alert.alert("Error", "Could not save poll.");
     }
   }
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Admin Panel</Text>
@@ -102,10 +113,17 @@ export default function Admin() {
         />
       ))}
 
-      <Button
+      <View style={styles.buttonRow}>
+        <Button
         title="Set Poll Content"
         onPress={setPollContent}
-      />
+        />
+        <Button
+        title = "Results"
+        onPress={() => router.replace("/results")}
+        />
+      </View>
+      
 
       <Text style={styles.sectionTitle}>Guest Management</Text>
 
@@ -173,9 +191,7 @@ export default function Admin() {
           if (!inviteEmail) return;
 
           try {
-            await setDoc(doc(db, "toRemove", inviteEmail), {
-              email: inviteEmail, 
-            });
+            await setDoc(doc(db, "toRemove", inviteEmail), {});
 
             setInviteEmail("");
             alert(`${inviteEmail} marked for removal\nEnsure that this is the correct email`);

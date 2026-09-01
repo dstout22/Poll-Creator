@@ -21,15 +21,25 @@ export default function Login() {
       const user = userCredential.user;
 
       if (user.email !== adminEmail) {
+
         const removeRef = doc(db, "toRemove", email);
         const removeSnap = await getDoc(removeRef);
 
         if (removeSnap.exists()) {
-          await deleteUser(user);
-          await deleteDoc(removeRef);
+          await deleteDoc(doc(db, "Results", user.uid));
           await deleteDoc(doc(db, "userPasswords", email));
+          await deleteUser(user);
+          await deleteDoc(removeRef);         
 
           setError("This account has been removed.");
+          return;
+        }
+
+        const resultsRef = doc(db, "Results", user.uid);
+        const resultsSnap = await getDoc(resultsRef);
+
+        if (resultsSnap.exists()) {
+          router.replace("/completed");
           return;
         }
 

@@ -1,12 +1,38 @@
-import { View, Text, Button, StyleSheet, Pressable } from "react-native";
+import { View, Text, Button, StyleSheet, Pressable, Alert } from "react-native";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/src/config/firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/src/config/firebaseConfig";
+import { router } from "expo-router";
 
 export default function Poll() {
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState<string[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+
+  const user = auth.currentUser;
+
+  const uploadResult = async () => {
+    if (selectedOption === null) {
+      Alert.alert("Error", "Please select an option before submitting.");
+      return;
+    }
+
+    try {
+
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
+      await setDoc(doc(db, "Results", user.uid), {
+                    choice: selectedOption, 
+      });
+
+      router.replace("/completed");
+    } catch (error) {
+      Alert.alert("Error", "Failed to submit your response. Please try again.");
+    }
+  }
 
   useEffect(() => {
     const loadPoll = async () => {
@@ -21,7 +47,7 @@ export default function Poll() {
           setOptions(pollData.options);
         }
       } catch (error) {
-        console.error("Could not load poll:", error);
+        Alert.alert("Error", "No poll available at this time");
       }
     };
 
@@ -49,7 +75,7 @@ export default function Poll() {
       <View style={styles.submitButton}>
         <Button
           title="Submit"
-          onPress={() => {}}
+          onPress={uploadResult}
         />
       </View>
     </View>
